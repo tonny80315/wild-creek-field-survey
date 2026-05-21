@@ -15,14 +15,17 @@ const customExportCols = [
   ["R_WATER", "R-1 下游水流坡度(%)"],
   ["R_DEPOSIT", "R-2 下游淤積坡度(%)"],
   ["PHOTO_UP_NAME", "上游照片檔名"],
+  ["PHOTO_UP_NOTE", "上游照片補充說明"],
   ["PHOTO_DOWN_NAME", "下游照片檔名"],
-  ["PHOTO_SECTION_NAME", "通洪斷面照片檔名"]
+  ["PHOTO_DOWN_NOTE", "下游照片補充說明"],
+  ["PHOTO_SECTION_NAME", "通洪斷面照片檔名"],
+  ["PHOTO_SECTION_NOTE", "通洪斷面照片補充說明"]
 ];
 const exportCols = [...viewCols, ...editCols, ...dropdownCols, ...extraCols];
 const photoTypes = [
-  { key: "PHOTO_UP", nameKey: "PHOTO_UP_NAME", label: "上游照片" },
-  { key: "PHOTO_DOWN", nameKey: "PHOTO_DOWN_NAME", label: "下游照片" },
-  { key: "PHOTO_SECTION", nameKey: "PHOTO_SECTION_NAME", label: "通洪斷面" }
+  { key: "PHOTO_UP", nameKey: "PHOTO_UP_NAME", noteKey: "PHOTO_UP_NOTE", label: "上游照片" },
+  { key: "PHOTO_DOWN", nameKey: "PHOTO_DOWN_NAME", noteKey: "PHOTO_DOWN_NOTE", label: "下游照片" },
+  { key: "PHOTO_SECTION", nameKey: "PHOTO_SECTION_NAME", noteKey: "PHOTO_SECTION_NOTE", label: "通洪斷面" }
 ];
 const kGroups = [
   {
@@ -457,7 +460,7 @@ function selectRecord(id) {
 }
 
 function ensureTimestamp(record) {
-  const hasContent = ["K", "Q_WATER", "Q_DEPOSIT", "R_WATER", "R_DEPOSIT", "S", "T", "U", "V", "W", "X", "Y", "Z", "AG", "AH", "AJ", "AL", "AM", "PHOTO_UP_NAME", "PHOTO_DOWN_NAME", "PHOTO_SECTION_NAME"]
+  const hasContent = ["K", "Q_WATER", "Q_DEPOSIT", "R_WATER", "R_DEPOSIT", "S", "T", "U", "V", "W", "X", "Y", "Z", "AG", "AH", "AJ", "AL", "AM", "PHOTO_UP_NAME", "PHOTO_UP_NOTE", "PHOTO_DOWN_NAME", "PHOTO_DOWN_NOTE", "PHOTO_SECTION_NAME", "PHOTO_SECTION_NOTE"]
     .some((col) => String(record[col] || "").trim());
   if (hasContent) {
     if (!record.AI) record.AI = today();
@@ -549,7 +552,7 @@ async function renderPhotoFields(row) {
     card.innerHTML = `
       <label for="${inputId}">
         ${photo.label}
-        <input id="${inputId}" type="file" accept="image/*" capture="environment">
+        <input id="${inputId}" type="file" accept="image/*">
       </label>
       <div class="photo-actions">
         <div>
@@ -558,6 +561,10 @@ async function renderPhotoFields(row) {
         </div>
         <button type="button" class="ghost-button" data-remove-photo="${photo.key}">移除</button>
       </div>
+      <label class="photo-note">
+        ${photo.label}補充說明
+        <textarea rows="3" data-photo-note="${photo.noteKey}" placeholder="記錄照片位置、拍攝方向、異常狀況或照片編號">${valueOf(row, photo.noteKey)}</textarea>
+      </label>
     `;
     const input = card.querySelector("input");
     input.addEventListener("change", async () => {
@@ -587,6 +594,15 @@ async function renderPhotoFields(row) {
       persistJson(STORAGE_KEY, saved);
       markLocalChanged();
       renderPhotoFields(row);
+      renderList();
+    });
+    card.querySelector("[data-photo-note]").addEventListener("input", (event) => {
+      if (!selectedId) return;
+      const record = collectCurrentRecord();
+      record[event.target.dataset.photoNote] = event.target.value.trim();
+      saved[selectedId] = record;
+      persistJson(STORAGE_KEY, saved);
+      markLocalChanged();
       renderList();
     });
     photoFields.appendChild(card);
