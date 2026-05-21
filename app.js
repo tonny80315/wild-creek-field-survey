@@ -84,6 +84,8 @@ const viewFields = document.querySelector("#viewFields");
 const editFields = document.querySelector("#editFields");
 const kMultiSelect = document.querySelector("#kMultiSelect");
 const dropdownFields = document.querySelector("#dropdownFields");
+const qOriginal = document.querySelector("#qOriginal");
+const rOriginal = document.querySelector("#rOriginal");
 const qWaterSlope = document.querySelector("#qWaterSlope");
 const qDepositSlope = document.querySelector("#qDepositSlope");
 const rWaterSlope = document.querySelector("#rWaterSlope");
@@ -100,6 +102,7 @@ const exportOne = document.querySelector("#exportOne");
 const exportAll = document.querySelector("#exportAll");
 const clearRecord = document.querySelector("#clearRecord");
 const backToList = document.querySelector("#backToList");
+const backToListBottom = document.querySelector("#backToListBottom");
 
 let selectedId = "";
 let saved = loadSavedRecords();
@@ -285,11 +288,12 @@ function renderList() {
   }
 
   rows.forEach((row) => {
+    const savedBadge = isFilledRecord(row.id) ? '<em class="saved-badge">已填寫</em>' : "";
     const button = document.createElement("button");
     button.type = "button";
     button.className = `site-card ${isFilledRecord(row.id) ? "is-saved" : ""}`;
     button.innerHTML = `
-      <strong>${valueOf(row, "A") || "未編號"}｜${valueOf(row, "E") || "未填溪段"}</strong>
+      <strong><span>${valueOf(row, "A") || "未編號"}｜${valueOf(row, "E") || "未填溪段"}</span>${savedBadge}</strong>
       <span>${valueOf(row, "F") || ""} ${valueOf(row, "G") || ""}</span>
       <span>風險等級：${valueOf(row, "I") || "未填"}　列號：${row.excelRow}</span>
     `;
@@ -427,6 +431,8 @@ function renderSelected(row) {
   dropdownFields.innerHTML = "";
   dropdownCols.forEach((col) => dropdownFields.appendChild(createSelectInput(row, col)));
 
+  qOriginal.textContent = row.values.Q || "-";
+  rOriginal.textContent = row.values.R || "-";
   qWaterSlope.value = valueOf(row, "Q_WATER");
   qDepositSlope.value = valueOf(row, "Q_DEPOSIT");
   rWaterSlope.value = valueOf(row, "R_WATER");
@@ -624,6 +630,7 @@ townSelect.addEventListener("change", renderList);
 keywordInput.addEventListener("input", renderList);
 saveRecord.addEventListener("click", saveCurrentRecord);
 backToList.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+backToListBottom.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
 [aiDate, ajInspector, akDate, alPhotoLink, amNote].forEach((input) => input.addEventListener("input", handleFieldInput));
 [qWaterSlope, qDepositSlope, rWaterSlope, rDepositSlope].forEach((input) => input.addEventListener("input", handleFieldInput));
 window.addEventListener("online", updateNetworkStatus);

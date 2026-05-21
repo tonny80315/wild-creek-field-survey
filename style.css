@@ -207,7 +207,10 @@ textarea:focus {
 }
 
 .site-card strong {
-  display: block;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
   margin-bottom: 5px;
   font-size: 1.02rem;
 }
@@ -221,6 +224,16 @@ textarea:focus {
 .site-card.is-saved {
   border-color: var(--accent);
   background: #f0faf6;
+}
+
+.saved-badge {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 900;
 }
 
 .empty-state {
@@ -358,7 +371,7 @@ textarea:focus {
   position: sticky;
   bottom: 0;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 10px;
   padding: 12px 0 4px;
   background: linear-gradient(rgba(243, 246, 244, 0), var(--bg) 24%);
