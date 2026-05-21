@@ -661,7 +661,7 @@ function buildSyncPayload(rows) {
   });
   return {
     app: "wild-creek-field-survey",
-    version: "pwa-v10",
+    version: "pwa-v11",
     submittedAt: new Date().toISOString(),
     headers,
     rows: buildSyncRows(rows)
@@ -690,8 +690,10 @@ async function syncSavedRows() {
     await fetch(url, {
       method: "POST",
       mode: "no-cors",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(buildSyncPayload(rows))
+      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=utf-8" },
+      body: new URLSearchParams({
+        payload: JSON.stringify(buildSyncPayload(rows))
+      }).toString()
     });
     syncState = {
       status: "sent",
