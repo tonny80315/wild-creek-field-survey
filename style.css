@@ -308,6 +308,52 @@ textarea:focus {
   font-size: 0.9rem;
 }
 
+.multi-section {
+  display: grid;
+  gap: 14px;
+}
+
+.multi-group {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: #fbfdfc;
+}
+
+.multi-group-title {
+  margin: 0 0 10px;
+  font-weight: 900;
+}
+
+.multi-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.multi-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  min-height: 48px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  font-weight: 700;
+}
+
+.multi-option input {
+  width: 20px;
+  min-height: 20px;
+  accent-color: var(--accent);
+}
+
+.other-input {
+  margin-top: 10px;
+}
+
 .button-row {
   position: sticky;
   bottom: 0;
@@ -365,6 +411,7 @@ button {
   .sync-panel,
   .field-grid,
   .view-grid,
+  .multi-options,
   .photo-actions,
   .button-row {
     grid-template-columns: 1fr;

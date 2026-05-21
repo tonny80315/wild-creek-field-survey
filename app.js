@@ -24,6 +24,51 @@ const photoTypes = [
   { key: "PHOTO_DOWN", nameKey: "PHOTO_DOWN_NAME", label: "下游照片" },
   { key: "PHOTO_SECTION", nameKey: "PHOTO_SECTION_NAME", label: "通洪斷面" }
 ];
+const kGroups = [
+  {
+    title: "1. 河道淤積情形",
+    otherKey: "K_OTHER_DEPOSIT",
+    options: [
+      "河道上游無顯著淤積情形",
+      "河道下游無顯著淤積情形",
+      "河道上下游無顯著淤積情形",
+      "河道上游輕度淤積",
+      "河道上游中度淤積",
+      "河道上游重度淤積",
+      "河道下游輕度淤積",
+      "河道下游中度淤積",
+      "河道下游重度淤積",
+      "其他"
+    ]
+  },
+  {
+    title: "2. 河道植生情形",
+    otherKey: "K_OTHER_VEGETATION",
+    options: [
+      "河道上下游植生茂密",
+      "河道上游植生茂密",
+      "河道下游植生茂密",
+      "河道兩側有些微植生",
+      "河道上下游兩側植生茂密",
+      "其他"
+    ]
+  },
+  {
+    title: "3. 河道通洪情形",
+    otherKey: "K_OTHER_CAPACITY",
+    options: [
+      "通洪斷面不足",
+      "通洪斷面足夠",
+      "經檢算通洪斷面不足",
+      "其他"
+    ]
+  },
+  {
+    title: "4. 補充說明",
+    otherKey: "K_NOTE",
+    options: []
+  }
+];
 
 const townSelect = document.querySelector("#townSelect");
 const keywordInput = document.querySelector("#keywordInput");
@@ -37,14 +82,13 @@ const selectedTown = document.querySelector("#selectedTown");
 const selectedTitle = document.querySelector("#selectedTitle");
 const viewFields = document.querySelector("#viewFields");
 const editFields = document.querySelector("#editFields");
+const kMultiSelect = document.querySelector("#kMultiSelect");
 const dropdownFields = document.querySelector("#dropdownFields");
 const qWaterSlope = document.querySelector("#qWaterSlope");
 const qDepositSlope = document.querySelector("#qDepositSlope");
 const rWaterSlope = document.querySelector("#rWaterSlope");
 const rDepositSlope = document.querySelector("#rDepositSlope");
-const ahSelect = document.querySelector("#ahSelect");
-const ahOtherWrap = document.querySelector("#ahOtherWrap");
-const ahOther = document.querySelector("#ahOther");
+const ahMultiSelect = document.querySelector("#ahMultiSelect");
 const aiDate = document.querySelector("#aiDate");
 const ajInspector = document.querySelector("#ajInspector");
 const akDate = document.querySelector("#akDate");
@@ -267,6 +311,86 @@ function createTextInput(row, col) {
   return label;
 }
 
+function parseMultiValue(value) {
+  return String(value || "")
+    .split(/[;；]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function createCheckboxOption(name, value, checked) {
+  const label = document.createElement("label");
+  label.className = "multi-option";
+  const input = document.createElement("input");
+  input.type = "checkbox";
+  input.name = name;
+  input.value = value;
+  input.checked = checked;
+  input.addEventListener("change", handleFieldInput);
+  label.appendChild(input);
+  label.append(value);
+  return label;
+}
+
+function renderKMulti(row) {
+  kMultiSelect.innerHTML = "";
+
+  kGroups.forEach((group, groupIndex) => {
+    const selected = saved[row.id]?.[`K_GROUP_${groupIndex}`] || parseMultiValue(valueOf(row, "K"));
+    const wrap = document.createElement("div");
+    wrap.className = "multi-group";
+    wrap.innerHTML = `<p class="multi-group-title">${group.title}</p>`;
+
+    if (group.options.length) {
+      const options = document.createElement("div");
+      options.className = "multi-options";
+      group.options.forEach((option) => {
+        options.appendChild(createCheckboxOption(`kOption-${groupIndex}`, option, selected.includes(option)));
+      });
+      wrap.appendChild(options);
+    }
+
+    const other = document.createElement("textarea");
+    other.className = "other-input";
+    other.dataset.kOther = group.otherKey;
+    other.rows = groupIndex === 3 ? 4 : 3;
+    other.placeholder = groupIndex === 3 ? "補充說明" : "選擇其他時，請在此補充";
+    other.value = saved[row.id]?.[group.otherKey] || "";
+    other.hidden = group.options.length > 0 && !selected.includes("其他");
+    other.addEventListener("input", handleFieldInput);
+    wrap.appendChild(other);
+    kMultiSelect.appendChild(wrap);
+  });
+}
+
+function renderAhMulti(row) {
+  const selected = parseMultiValue(valueOf(row, "AH"));
+  ahMultiSelect.innerHTML = "";
+  const wrap = document.createElement("div");
+  wrap.className = "multi-group";
+  const options = document.createElement("div");
+  options.className = "multi-options";
+  dataset.dropdowns.AH.forEach((option) => {
+    options.appendChild(createCheckboxOption("ahOption", option, selected.includes(option)));
+  });
+  wrap.appendChild(options);
+
+  const other = document.createElement("textarea");
+  other.className = "other-input";
+  other.dataset.ahOther = "AH_OTHER";
+  other.rows = 4;
+  other.placeholder = "選擇其他時，請在此補充說明";
+  other.value = saved[row.id]?.AH_OTHER || "";
+  other.hidden = !selected.includes("其他");
+  other.addEventListener("input", handleFieldInput);
+  wrap.appendChild(other);
+  ahMultiSelect.appendChild(wrap);
+}
+
+function collectChecked(name) {
+  return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map((input) => input.value);
+}
+
 function createSelectInput(row, col) {
   const label = document.createElement("label");
   label.textContent = getHeader(col);
@@ -297,7 +421,8 @@ function renderSelected(row) {
   });
 
   editFields.innerHTML = "";
-  editCols.forEach((col) => editFields.appendChild(createTextInput(row, col)));
+  editCols.filter((col) => col !== "K").forEach((col) => editFields.appendChild(createTextInput(row, col)));
+  renderKMulti(row);
 
   dropdownFields.innerHTML = "";
   dropdownCols.forEach((col) => dropdownFields.appendChild(createSelectInput(row, col)));
@@ -307,7 +432,7 @@ function renderSelected(row) {
   rWaterSlope.value = valueOf(row, "R_WATER");
   rDepositSlope.value = valueOf(row, "R_DEPOSIT");
 
-  renderAh(row);
+  renderAhMulti(row);
   aiDate.value = valueOf(row, "AI");
   ajInspector.value = valueOf(row, "AJ");
   akDate.value = valueOf(row, "AK");
@@ -317,18 +442,6 @@ function renderSelected(row) {
 
   fieldForm.hidden = false;
   fieldForm.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-function renderAh(row) {
-  ahSelect.innerHTML = "";
-  ahSelect.appendChild(new Option("請選擇", ""));
-  dataset.dropdowns.AH.forEach((item) => ahSelect.appendChild(new Option(item, item)));
-
-  const current = valueOf(row, "AH");
-  const matched = dataset.dropdowns.AH.includes(current);
-  ahSelect.value = matched ? current : current ? "其他" : "";
-  ahOther.value = matched ? "" : current;
-  ahOtherWrap.hidden = ahSelect.value !== "其他";
 }
 
 function selectRecord(id) {
@@ -355,7 +468,30 @@ function collectCurrentRecord() {
     record[input.dataset.col] = input.value.trim();
   });
 
-  record.AH = ahSelect.value === "其他" ? ahOther.value.trim() || "其他" : ahSelect.value;
+  const ahSelected = collectChecked("ahOption");
+  const kOtherFields = Array.from(document.querySelectorAll("[data-k-other]"));
+  kOtherFields.forEach((input) => {
+    record[input.dataset.kOther] = input.value.trim();
+  });
+  const ahOtherInput = document.querySelector("[data-ah-other]");
+  record.AH_OTHER = ahOtherInput?.value.trim() || "";
+  const kParts = [];
+  kGroups.forEach((group, groupIndex) => {
+    const selected = collectChecked(`kOption-${groupIndex}`);
+    record[`K_GROUP_${groupIndex}`] = selected;
+    const otherText = record[group.otherKey];
+    const groupValues = selected
+      .filter((item) => item !== "其他")
+      .concat(selected.includes("其他") && otherText ? [`其他：${otherText}`] : selected.includes("其他") ? ["其他"] : [])
+      .concat(group.options.length === 0 && otherText ? [otherText] : []);
+    if (groupValues.length) {
+      kParts.push(`${group.title}：${groupValues.join("、")}`);
+    }
+  });
+  record.K = kParts.join("；");
+  record.AH = ahSelected
+    .concat(record.AH_OTHER ? [record.AH_OTHER] : [])
+    .join("；");
   record.Q_WATER = qWaterSlope.value;
   record.Q_DEPOSIT = qDepositSlope.value;
   record.R_WATER = rWaterSlope.value;
@@ -384,7 +520,16 @@ function handleFieldInput() {
   if (!draft) return;
   aiDate.value = draft.AI || "";
   akDate.value = draft.AK || "";
-  ahOtherWrap.hidden = ahSelect.value !== "其他";
+  document.querySelectorAll("[data-k-other]").forEach((input) => {
+    const group = input.closest(".multi-group");
+    const hasOther = Boolean(group?.querySelector('input[value="其他"]:checked'));
+    const isNote = input.dataset.kOther === "K_NOTE";
+    input.hidden = !isNote && !hasOther;
+  });
+  const ahOtherInput = document.querySelector("[data-ah-other]");
+  if (ahOtherInput) {
+    ahOtherInput.hidden = !Boolean(document.querySelector('input[name="ahOption"][value="其他"]:checked'));
+  }
 }
 
 async function renderPhotoFields(row) {
@@ -479,8 +624,6 @@ townSelect.addEventListener("change", renderList);
 keywordInput.addEventListener("input", renderList);
 saveRecord.addEventListener("click", saveCurrentRecord);
 backToList.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
-ahSelect.addEventListener("change", handleFieldInput);
-ahOther.addEventListener("input", handleFieldInput);
 [aiDate, ajInspector, akDate, alPhotoLink, amNote].forEach((input) => input.addEventListener("input", handleFieldInput));
 [qWaterSlope, qDepositSlope, rWaterSlope, rDepositSlope].forEach((input) => input.addEventListener("input", handleFieldInput));
 window.addEventListener("online", updateNetworkStatus);
