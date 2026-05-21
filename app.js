@@ -2,6 +2,7 @@ const dataset = window.FIELD_SURVEY_DATA || { headers: {}, rows: [], dropdowns: 
 const STORAGE_KEY = "wild-creek-field-survey-v3";
 const LEGACY_STORAGE_KEY = "wild-creek-field-survey-v2";
 const SYNC_KEY = "wild-creek-sync-state-v1";
+const SYNC_URL_KEY = "wild-creek-sync-web-app-url-v1";
 const PHOTO_DB_NAME = "wild-creek-field-photos";
 const PHOTO_STORE = "photos";
 
@@ -79,6 +80,8 @@ const siteList = document.querySelector("#siteList");
 const recordCount = document.querySelector("#recordCount");
 const savedCount = document.querySelector("#savedCount");
 const syncStatusText = document.querySelector("#syncStatusText");
+const syncUpload = document.querySelector("#syncUpload");
+const syncUrlInput = document.querySelector("#syncUrlInput");
 const networkStatus = document.querySelector("#networkStatus");
 const fieldForm = document.querySelector("#fieldForm");
 const selectedTown = document.querySelector("#selectedTown");
@@ -110,6 +113,7 @@ const backToListBottom = document.querySelector("#backToListBottom");
 let selectedId = "";
 let saved = loadSavedRecords();
 let syncState = loadJson(SYNC_KEY, { status: "local-only", updatedAt: "" });
+let syncUrl = localStorage.getItem(SYNC_URL_KEY) || "";
 let photoDbPromise = null;
 
 function loadJson(key, fallback) {
@@ -242,9 +246,15 @@ function markLocalChanged() {
 function updateSyncStatus() {
   const count = getSavedRows().length;
   savedCount.textContent = `${count} 筆已填`;
-  syncStatusText.textContent = count
-    ? "本機暫存，尚未雲端同步"
-    : "尚無填寫資料";
+  if (!count) {
+    syncStatusText.textContent = "尚無填寫資料";
+    return;
+  }
+  if (syncState.status === "sent" && syncState.updatedAt) {
+    syncStatusText.textContent = `已送出同步請求：${new Date(syncState.updatedAt).toLocaleString("zh-TW")}`;
+    return;
+  }
+  syncStatusText.textContent = "本機暫存，尚未雲端同步";
 }
 
 function updateNetworkStatus() {
@@ -623,6 +633,87 @@ function buildCsv(rows) {
   return "\uFEFF" + [headers.map(csvEscape).join(","), ...body].join("\n");
 }
 
+function buildSyncRows(rows) {
+  const allCols = [...exportCols, ...customExportCols.map(([key]) => key)];
+  return rows.map((row) => {
+    const stored = saved[row.id] || {};
+    const values = {};
+    allCols.forEach((col) => {
+      values[col] = stored[col] ?? row.values[col] ?? "";
+    });
+    return {
+      recordId: row.id,
+      excelRow: row.excelRow,
+      town: row.values.B || "",
+      creek: row.values.E || "",
+      submittedAt: new Date().toISOString(),
+      values
+    };
+  });
+}
+
+function buildSyncPayload(rows) {
+  const allCols = [...exportCols, ...customExportCols.map(([key]) => key)];
+  const headers = {};
+  allCols.forEach((col) => {
+    headers[col] = getExportHeader(col);
+  });
+  return {
+    app: "wild-creek-field-survey",
+    version: "pwa-v8",
+    submittedAt: new Date().toISOString(),
+    headers,
+    rows: buildSyncRows(rows)
+  };
+}
+
+async function syncSavedRows() {
+  const rows = getSavedRows();
+  const url = syncUrlInput.value.trim();
+  if (!rows.length) {
+    alert("目前沒有已填寫資料可同步。");
+    return;
+  }
+  if (!url) {
+    alert("請先貼上 Google Apps Script Web App URL。");
+    syncUrlInput.focus();
+    return;
+  }
+
+  syncUrl = url;
+  localStorage.setItem(SYNC_URL_KEY, syncUrl);
+  syncUpload.disabled = true;
+  syncUpload.textContent = "同步中";
+
+  try {
+    await fetch(url, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(buildSyncPayload(rows))
+    });
+    syncState = {
+      status: "sent",
+      updatedAt: new Date().toISOString()
+    };
+    persistJson(SYNC_KEY, syncState);
+    updateSyncStatus();
+    alert("已送出同步請求。請到 Google 試算表確認資料是否寫入。");
+  } catch (error) {
+    syncState = {
+      status: "local-only",
+      updatedAt: new Date().toISOString(),
+      error: String(error)
+    };
+    persistJson(SYNC_KEY, syncState);
+    updateSyncStatus();
+    alert("同步送出失敗，請確認網路與 Web App URL。");
+  } finally {
+    syncUpload.disabled = false;
+    syncUpload.textContent = "同步上傳";
+  }
+}
+
 function downloadCsv(filename, rows) {
   const blob = new Blob([buildCsv(rows)], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -633,6 +724,14 @@ function downloadCsv(filename, rows) {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+function safeFilename(value) {
+  return String(value || "")
+    .trim()
+    .replace(/[\\/:*?"<>|]/g, "_")
+    .replace(/\s+/g, "_")
+    .slice(0, 60);
 }
 
 function registerServiceWorker() {
@@ -651,6 +750,12 @@ backToListBottom.addEventListener("click", () => window.scrollTo({ top: 0, behav
 [qWaterSlope, qDepositSlope, rWaterSlope, rDepositSlope].forEach((input) => input.addEventListener("input", handleFieldInput));
 window.addEventListener("online", updateNetworkStatus);
 window.addEventListener("offline", updateNetworkStatus);
+syncUrlInput.value = syncUrl;
+syncUrlInput.addEventListener("change", () => {
+  syncUrl = syncUrlInput.value.trim();
+  localStorage.setItem(SYNC_URL_KEY, syncUrl);
+});
+syncUpload.addEventListener("click", syncSavedRows);
 
 clearRecord.addEventListener("click", () => {
   if (!selectedId || !confirm("確定清除本筆已填內容？")) return;
@@ -665,7 +770,12 @@ exportOne.addEventListener("click", () => {
   if (!selectedId) return;
   saveCurrentRecord();
   const row = dataset.rows.find((item) => item.id === selectedId);
-  downloadCsv(`${valueOf(row, "A") || "單筆"}_${valueOf(row, "B") || "外業"}_外業資料.csv`, [row]);
+  const parts = [
+    safeFilename(valueOf(row, "A") || "單筆"),
+    safeFilename(valueOf(row, "B") || "外業"),
+    safeFilename(valueOf(row, "F") || valueOf(row, "G") || valueOf(row, "E") || "檢視點位")
+  ].filter(Boolean);
+  downloadCsv(`${parts.join("_")}_外業資料.csv`, [row]);
 });
 
 exportAll.addEventListener("click", () => {

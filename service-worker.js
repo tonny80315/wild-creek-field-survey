@@ -1,4 +1,4 @@
-const CACHE_NAME = "wild-creek-field-survey-pwa-v7";
+const CACHE_NAME = "wild-creek-field-survey-pwa-v9";
 const APP_SHELL = [
   "./",
   "./index.html",

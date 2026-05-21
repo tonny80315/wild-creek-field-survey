@@ -26,7 +26,14 @@
         <p class="eyebrow dark">同步狀態</p>
         <strong id="syncStatusText">本機暫存，尚未雲端同步</strong>
       </div>
-      <span id="savedCount" class="sync-count">0 筆已填</span>
+      <div class="sync-actions">
+        <span id="savedCount" class="sync-count">0 筆已填</span>
+        <button id="syncUpload" type="button" class="primary-button">同步上傳</button>
+      </div>
+      <label class="sync-url">
+        Google Apps Script Web App URL
+        <input id="syncUrlInput" type="url" placeholder="貼上 /exec 結尾的 Web App 網址">
+      </label>
     </section>
 
     <section class="toolbar">
@@ -163,7 +170,7 @@
         <li>部署到 GitHub Pages 後，用手機瀏覽器開啟網址，並加入主畫面即可作為 PWA 使用。</li>
         <li>第一次開啟時請保持網路連線，讓系統快取頁面與資料；之後外業離線仍可開啟。</li>
         <li>先選擇「鄉鎮市」，清單只會顯示該鄉鎮市的檢視資料。</li>
-        <li>填寫資料會先儲存在手機瀏覽器本機，目前不會自動同步到雲端資料夾或 Excel。</li>
+        <li>填寫資料會先儲存在手機瀏覽器本機；設定 Web App URL 後，可按「同步上傳」寫入 Google 試算表。</li>
         <li>照片會暫存在手機瀏覽器中；數量多時請定期匯出資料並另行備份原始照片。</li>
         <li>完成後可匯出本筆或全部已填 CSV，再上傳 Google 雲端硬碟或回辦公室彙整。</li>
       </ol>
