@@ -70,6 +70,28 @@
       </section>
 
       <section class="form-section">
+        <h2>坡度細分</h2>
+        <div class="field-grid">
+          <label>
+            Q-1 上游水流坡度(%)
+            <input id="qWaterSlope" type="number" step="0.01" inputmode="decimal" placeholder="例：12.5">
+          </label>
+          <label>
+            Q-2 上游淤積坡度(%)
+            <input id="qDepositSlope" type="number" step="0.01" inputmode="decimal" placeholder="例：8.3">
+          </label>
+          <label>
+            R-1 下游水流坡度(%)
+            <input id="rWaterSlope" type="number" step="0.01" inputmode="decimal" placeholder="例：10.2">
+          </label>
+          <label>
+            R-2 下游淤積坡度(%)
+            <input id="rDepositSlope" type="number" step="0.01" inputmode="decimal" placeholder="例：6.8">
+          </label>
+        </div>
+      </section>
+
+      <section class="form-section">
         <h2>下拉選單欄位</h2>
         <div id="dropdownFields" class="field-grid"></div>
       </section>
@@ -112,6 +134,12 @@
         </label>
       </section>
 
+      <section class="form-section">
+        <h2>照片暫存</h2>
+        <p class="helper-text">照片會壓縮後暫存在本機瀏覽器，不會自動上傳雲端；匯出 CSV 時會記錄照片檔名與是否已暫存。</p>
+        <div id="photoFields" class="photo-grid"></div>
+      </section>
+
       <div class="button-row">
         <button id="saveRecord" type="button" class="primary-button">儲存本筆</button>
         <button id="exportOne" type="button" class="secondary-button">匯出本筆 CSV</button>
@@ -126,6 +154,7 @@
         <li>第一次開啟時請保持網路連線，讓系統快取頁面與資料；之後外業離線仍可開啟。</li>
         <li>先選擇「鄉鎮市」，清單只會顯示該鄉鎮市的檢視資料。</li>
         <li>填寫資料會先儲存在手機瀏覽器本機，目前不會自動同步到雲端資料夾或 Excel。</li>
+        <li>照片會暫存在手機瀏覽器中；數量多時請定期匯出資料並另行備份原始照片。</li>
         <li>完成後可匯出本筆或全部已填 CSV，再上傳 Google 雲端硬碟或回辦公室彙整。</li>
       </ol>
     </section>
