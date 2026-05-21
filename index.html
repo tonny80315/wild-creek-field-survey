@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#173f36">
+  <title>野溪外業填寫工具</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">115 年外業檢視清單</p>
+      <h1>野溪外業填寫工具</h1>
+    </div>
+    <div class="header-status">
+      <span id="networkStatus" class="status-pill">檢查連線</span>
+      <span id="recordCount" class="status-pill">0 筆</span>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section class="sync-panel" aria-live="polite">
+      <div>
+        <p class="eyebrow dark">同步狀態</p>
+        <strong id="syncStatusText">本機暫存，尚未雲端同步</strong>
+      </div>
+      <span id="savedCount" class="sync-count">0 筆已填</span>
+    </section>
+
+    <section class="toolbar">
+      <label>
+        鄉鎮市篩選
+        <select id="townSelect">
+          <option value="">請選擇鄉鎮市</option>
+        </select>
+      </label>
+      <label>
+        關鍵字搜尋
+        <input id="keywordInput" type="search" placeholder="搜尋編號、溪段、地標、潛勢溪流">
+      </label>
+    </section>
+
+    <section class="list-section">
+      <div class="section-heading">
+        <h2>檢視清單</h2>
+        <button id="exportAll" type="button" class="secondary-button">匯出已填 CSV</button>
+      </div>
+      <div id="siteList" class="site-list"></div>
+    </section>
+
+    <form id="fieldForm" class="field-form" hidden>
+      <section class="form-section selected-record">
+        <div>
+          <p id="selectedTown" class="eyebrow dark"></p>
+          <h2 id="selectedTitle">請先選擇一筆資料</h2>
+        </div>
+        <button id="backToList" type="button" class="ghost-button">回清單</button>
+      </section>
+
+      <section class="form-section">
+        <h2>檢視欄位</h2>
+        <div id="viewFields" class="view-grid"></div>
+      </section>
+
+      <section class="form-section">
+        <h2>外業填寫欄位</h2>
+        <div id="editFields" class="field-grid"></div>
+      </section>
+
+      <section class="form-section">
+        <h2>下拉選單欄位</h2>
+        <div id="dropdownFields" class="field-grid"></div>
+      </section>
+
+      <section class="form-section">
+        <h2>建議處理對策</h2>
+        <label>
+          AH 115年建議處理對策
+          <select id="ahSelect"></select>
+        </label>
+        <label id="ahOtherWrap" hidden>
+          其他補充內容
+          <textarea id="ahOther" rows="4" placeholder="選擇其他時，請在此補充說明。"></textarea>
+        </label>
+      </section>
+
+      <section class="form-section">
+        <h2>日期與備註</h2>
+        <div class="field-grid">
+          <label>
+            AI 115年勘查日期
+            <input id="aiDate" type="date">
+          </label>
+          <label>
+            AJ 115年勘查人員
+            <input id="ajInspector" type="text" placeholder="填寫勘查人員">
+          </label>
+          <label>
+            AK 填表日期
+            <input id="akDate" type="date">
+          </label>
+          <label>
+            AL 照片雲端連結
+            <input id="alPhotoLink" type="url" placeholder="貼上 Google Drive 資料夾或照片連結">
+          </label>
+        </div>
+        <label>
+          AM 備註及說明
+          <textarea id="amNote" rows="4" placeholder="補充現地狀況、照片編號或其他說明"></textarea>
+        </label>
+      </section>
+
+      <div class="button-row">
+        <button id="saveRecord" type="button" class="primary-button">儲存本筆</button>
+        <button id="exportOne" type="button" class="secondary-button">匯出本筆 CSV</button>
+        <button id="clearRecord" type="button" class="ghost-button">清除本筆填寫</button>
+      </div>
+    </form>
+
+    <section class="instructions">
+      <h2>操作說明</h2>
+      <ol>
+        <li>部署到 GitHub Pages 後，用手機瀏覽器開啟網址，並加入主畫面即可作為 PWA 使用。</li>
+        <li>第一次開啟時請保持網路連線，讓系統快取頁面與資料；之後外業離線仍可開啟。</li>
+        <li>先選擇「鄉鎮市」，清單只會顯示該鄉鎮市的檢視資料。</li>
+        <li>填寫資料會先儲存在手機瀏覽器本機，目前不會自動同步到雲端資料夾或 Excel。</li>
+        <li>完成後可匯出本筆或全部已填 CSV，再上傳 Google 雲端硬碟或回辦公室彙整。</li>
+      </ol>
+    </section>
+  </main>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
