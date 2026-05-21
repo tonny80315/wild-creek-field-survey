@@ -3,6 +3,7 @@ const STORAGE_KEY = "wild-creek-field-survey-v3";
 const LEGACY_STORAGE_KEY = "wild-creek-field-survey-v2";
 const SYNC_KEY = "wild-creek-sync-state-v1";
 const SYNC_URL_KEY = "wild-creek-sync-web-app-url-v1";
+const DEFAULT_SYNC_URL = "https://script.google.com/macros/s/AKfycbxRNQ9TARshouTwTg5TFtgRGcFoyAcv_02hPPWByO4itCiGT8OLVF1rkR5WGE5ew_XC/exec";
 const PHOTO_DB_NAME = "wild-creek-field-photos";
 const PHOTO_STORE = "photos";
 
@@ -113,7 +114,7 @@ const backToListBottom = document.querySelector("#backToListBottom");
 let selectedId = "";
 let saved = loadSavedRecords();
 let syncState = loadJson(SYNC_KEY, { status: "local-only", updatedAt: "" });
-let syncUrl = localStorage.getItem(SYNC_URL_KEY) || "";
+let syncUrl = localStorage.getItem(SYNC_URL_KEY) || DEFAULT_SYNC_URL;
 let photoDbPromise = null;
 
 function loadJson(key, fallback) {
@@ -660,7 +661,7 @@ function buildSyncPayload(rows) {
   });
   return {
     app: "wild-creek-field-survey",
-    version: "pwa-v8",
+    version: "pwa-v10",
     submittedAt: new Date().toISOString(),
     headers,
     rows: buildSyncRows(rows)
