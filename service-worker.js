@@ -1,6 +1,6 @@
 importScripts("./previous-results.js");
 
-const CACHE_NAME = "wild-creek-field-survey-pwa-v15";
+const CACHE_NAME = "wild-creek-field-survey-pwa-v16";
 const previousResults = self.PREVIOUS_RESULTS_DATA || { basePath: "./previous-results/", records: {} };
 
 function previousResultImageUrl(page) {
@@ -23,7 +23,7 @@ const APP_SHELL = [
   "./app.js",
   "./data.js",
   "./previous-results.js",
-  "./previous-results.js?v=14",
+  "./previous-results.js?v=16",
   "./manifest.json",
   "./icons/icon-192.svg",
   "./icons/icon-512.svg"

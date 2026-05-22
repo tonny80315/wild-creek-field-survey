@@ -91,6 +91,10 @@ const selectedTitle = document.querySelector("#selectedTitle");
 const previousResultStatus = document.querySelector("#previousResultStatus");
 const previousSummary = document.querySelector("#previousSummary");
 const previousResultGallery = document.querySelector("#previousResultGallery");
+const imageViewer = document.querySelector("#imageViewer");
+const imageViewerTitle = document.querySelector("#imageViewerTitle");
+const imageViewerImg = document.querySelector("#imageViewerImg");
+const closeImageViewer = document.querySelector("#closeImageViewer");
 const viewFields = document.querySelector("#viewFields");
 const editFields = document.querySelector("#editFields");
 const kMultiSelect = document.querySelector("#kMultiSelect");
@@ -120,6 +124,7 @@ let saved = loadSavedRecords();
 let syncState = loadJson(SYNC_KEY, { status: "local-only", updatedAt: "" });
 let syncUrl = localStorage.getItem(SYNC_URL_KEY) || DEFAULT_SYNC_URL;
 let photoDbPromise = null;
+let imageViewerOpen = false;
 
 function loadJson(key, fallback) {
   try {
@@ -438,6 +443,29 @@ function previousResultImageUrl(page) {
   return `${previousResults.basePath || "./previous-results/"}${page.image}`;
 }
 
+function openImageViewer(imageUrl, title) {
+  imageViewerTitle.textContent = title || "前期成果圖";
+  imageViewerImg.src = imageUrl;
+  imageViewerImg.alt = title || "前期成果大圖";
+  imageViewer.hidden = false;
+  document.body.classList.add("viewer-open");
+  imageViewerOpen = true;
+  if (!history.state?.imageViewer) {
+    history.pushState({ ...(history.state || {}), imageViewer: true }, "");
+  }
+}
+
+function closeImageViewerPanel(fromPopState = false) {
+  if (!imageViewerOpen) return;
+  imageViewer.hidden = true;
+  imageViewerImg.removeAttribute("src");
+  document.body.classList.remove("viewer-open");
+  imageViewerOpen = false;
+  if (!fromPopState && history.state?.imageViewer) {
+    history.back();
+  }
+}
+
 function renderPreviousResults(row) {
   const result = previousResults.records?.[row.id];
   const summaryItems = [
@@ -480,22 +508,22 @@ function renderPreviousResults(row) {
 
   pages.forEach((page, index) => {
     const imageUrl = previousResultImageUrl(page);
+    const imageTitle = page.title || `前期成果圖 ${index + 1}`;
     const card = document.createElement("article");
     card.className = "previous-result-card";
     card.innerHTML = `
       <button type="button" class="previous-image-button" aria-label="開啟前期成果大圖">
-        <img src="${imageUrl}" alt="${page.title || `前期成果圖 ${index + 1}`}" loading="lazy">
+        <img src="${imageUrl}" alt="${imageTitle}" loading="lazy">
       </button>
       <div class="previous-result-body">
-        <strong>${page.title || `前期成果圖 ${index + 1}`}</strong>
+        <strong>${imageTitle}</strong>
         <span>${page.sourcePage ? `來源頁碼：${page.sourcePage}` : ""}</span>
         ${page.note ? `<p>${page.note}</p>` : ""}
-        <a class="secondary-button previous-open-link" href="${imageUrl}" target="_blank" rel="noopener">開啟大圖</a>
+        <button type="button" class="secondary-button previous-open-link">開啟大圖</button>
       </div>
     `;
-    card.querySelector(".previous-image-button").addEventListener("click", () => {
-      window.open(imageUrl, "_blank", "noopener");
-    });
+    card.querySelector(".previous-image-button").addEventListener("click", () => openImageViewer(imageUrl, imageTitle));
+    card.querySelector(".previous-open-link").addEventListener("click", () => openImageViewer(imageUrl, imageTitle));
     previousResultGallery.appendChild(card);
   });
 }
@@ -829,6 +857,13 @@ backToListBottom.addEventListener("click", () => window.scrollTo({ top: 0, behav
 [qWaterSlope, qDepositSlope, rWaterSlope, rDepositSlope].forEach((input) => input.addEventListener("input", handleFieldInput));
 window.addEventListener("online", updateNetworkStatus);
 window.addEventListener("offline", updateNetworkStatus);
+window.addEventListener("popstate", () => closeImageViewerPanel(true));
+imageViewer.addEventListener("click", (event) => {
+  if (event.target === imageViewer || event.target.classList.contains("image-viewer-stage")) {
+    closeImageViewerPanel();
+  }
+});
+closeImageViewer.addEventListener("click", () => closeImageViewerPanel());
 syncUrlInput.value = syncUrl;
 syncUrlInput.addEventListener("change", () => {
   syncUrl = syncUrlInput.value.trim();
