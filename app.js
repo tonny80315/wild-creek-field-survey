@@ -1,4 +1,5 @@
 const dataset = window.FIELD_SURVEY_DATA || { headers: {}, rows: [], dropdowns: {} };
+const previousResults = window.PREVIOUS_RESULTS_DATA || { basePath: "./previous-results/", records: {} };
 const STORAGE_KEY = "wild-creek-field-survey-v3";
 const LEGACY_STORAGE_KEY = "wild-creek-field-survey-v2";
 const SYNC_KEY = "wild-creek-sync-state-v1";
@@ -87,6 +88,9 @@ const networkStatus = document.querySelector("#networkStatus");
 const fieldForm = document.querySelector("#fieldForm");
 const selectedTown = document.querySelector("#selectedTown");
 const selectedTitle = document.querySelector("#selectedTitle");
+const previousResultStatus = document.querySelector("#previousResultStatus");
+const previousSummary = document.querySelector("#previousSummary");
+const previousResultGallery = document.querySelector("#previousResultGallery");
 const viewFields = document.querySelector("#viewFields");
 const editFields = document.querySelector("#editFields");
 const kMultiSelect = document.querySelector("#kMultiSelect");
@@ -426,9 +430,81 @@ function createSelectInput(row, col) {
   return label;
 }
 
+function previousResultImageUrl(page) {
+  if (!page?.image) return "";
+  if (/^(https?:)?\/\//.test(page.image) || page.image.startsWith("./") || page.image.startsWith("/")) {
+    return page.image;
+  }
+  return `${previousResults.basePath || "./previous-results/"}${page.image}`;
+}
+
+function renderPreviousResults(row) {
+  const result = previousResults.records?.[row.id];
+  const summaryItems = [
+    ["114年前期溪段現況淤積情形", valueOf(row, "J")],
+    ["114年前期處理等級分類", valueOf(row, "AB")],
+    ["114年前期建議處理對策", valueOf(row, "AC")],
+    ["114年前期勘查日期", valueOf(row, "AD")],
+    ["114年前期勘查人員", valueOf(row, "AF")]
+  ];
+
+  previousSummary.innerHTML = "";
+  summaryItems.forEach(([label, value]) => {
+    const item = document.createElement("div");
+    item.className = "previous-summary-item";
+    item.innerHTML = `<span>${label}</span><strong>${value || "-"}</strong>`;
+    previousSummary.appendChild(item);
+  });
+
+  previousResultGallery.innerHTML = "";
+  const pages = result?.pages || [];
+  previousResultStatus.textContent = pages.length ? `${pages.length} 張成果圖` : "尚未對應成果圖";
+
+  if (result?.title || result?.description) {
+    const intro = document.createElement("div");
+    intro.className = "previous-result-intro";
+    intro.innerHTML = `
+      ${result.title ? `<strong>${result.title}</strong>` : ""}
+      ${result.description ? `<p>${result.description}</p>` : ""}
+    `;
+    previousResultGallery.appendChild(intro);
+  }
+
+  if (!pages.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "尚未建立前期成果簡報對應。";
+    previousResultGallery.appendChild(empty);
+    return;
+  }
+
+  pages.forEach((page, index) => {
+    const imageUrl = previousResultImageUrl(page);
+    const card = document.createElement("article");
+    card.className = "previous-result-card";
+    card.innerHTML = `
+      <button type="button" class="previous-image-button" aria-label="開啟前期成果大圖">
+        <img src="${imageUrl}" alt="${page.title || `前期成果圖 ${index + 1}`}" loading="lazy">
+      </button>
+      <div class="previous-result-body">
+        <strong>${page.title || `前期成果圖 ${index + 1}`}</strong>
+        <span>${page.sourcePage ? `來源頁碼：${page.sourcePage}` : ""}</span>
+        ${page.note ? `<p>${page.note}</p>` : ""}
+        <a class="secondary-button previous-open-link" href="${imageUrl}" target="_blank" rel="noopener">開啟大圖</a>
+      </div>
+    `;
+    card.querySelector(".previous-image-button").addEventListener("click", () => {
+      window.open(imageUrl, "_blank", "noopener");
+    });
+    previousResultGallery.appendChild(card);
+  });
+}
+
 function renderSelected(row) {
   selectedTown.textContent = `${valueOf(row, "B")}｜Excel 第 ${row.excelRow} 列`;
   selectedTitle.textContent = `${valueOf(row, "A") || "未編號"} ${valueOf(row, "E") || ""}`;
+
+  renderPreviousResults(row);
 
   viewFields.innerHTML = "";
   viewCols.forEach((col) => {

@@ -1,10 +1,29 @@
-const CACHE_NAME = "wild-creek-field-survey-pwa-v11";
+importScripts("./previous-results.js");
+
+const CACHE_NAME = "wild-creek-field-survey-pwa-v15";
+const previousResults = self.PREVIOUS_RESULTS_DATA || { basePath: "./previous-results/", records: {} };
+
+function previousResultImageUrl(page) {
+  if (!page || !page.image) return "";
+  if (/^(https?:)?\/\//.test(page.image) || page.image.startsWith("./") || page.image.startsWith("/")) {
+    return page.image;
+  }
+  return `${previousResults.basePath || "./previous-results/"}${page.image}`;
+}
+
+const PREVIOUS_RESULT_ASSETS = Object.values(previousResults.records || {})
+  .flatMap((record) => record.pages || [])
+  .map(previousResultImageUrl)
+  .filter((url) => url && !/^(https?:)?\/\//.test(url));
+
 const APP_SHELL = [
   "./",
   "./index.html",
   "./style.css",
   "./app.js",
   "./data.js",
+  "./previous-results.js",
+  "./previous-results.js?v=14",
   "./manifest.json",
   "./icons/icon-192.svg",
   "./icons/icon-512.svg"
@@ -14,6 +33,8 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => cache.addAll(APP_SHELL))
+      .then(() => caches.open(CACHE_NAME))
+      .then((cache) => Promise.all(PREVIOUS_RESULT_ASSETS.map((asset) => cache.add(asset).catch(() => null))))
       .then(() => self.skipWaiting())
   );
 });
