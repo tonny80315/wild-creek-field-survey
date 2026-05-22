@@ -17,6 +17,26 @@ const customExportCols = [
   ["Q_DEPOSIT", "Q-2 上游淤積坡度(%)"],
   ["R_WATER", "R-1 下游水流坡度(%)"],
   ["R_DEPOSIT", "R-2 下游淤積坡度(%)"],
+  ["W_DEPOSIT_HEIGHT_M", "通水斷面平均淤積高度約(公尺)"],
+  ["W_DEPOSIT_WIDTH_M", "通水斷面平均淤積寬度約(公尺)"],
+  ["CATCHMENT_AREA_HA", "集水區面積(ha)"],
+  ["RUNOFF_COEFFICIENT_C", "逕流係數 C"],
+  ["ANNUAL_RAINFALL_MM", "年平均雨量 P(mm)"],
+  ["CONCENTRATION_TIME_MIN", "集流時間 tc(分)"],
+  ["RAINFALL_INTENSITY_50_MM_HR", "I50 降雨強度(mm/hr)"],
+  ["ESTIMATED_Q50_CLEAR_WATER_CMS", "估算 Q50 清水流(cms)"],
+  ["STREAM_LENGTH_M", "土石流潛勢溪流長度(m)"],
+  ["STREAM_HIGH_POINT_M", "溪流最高點高程(m)"],
+  ["STREAM_LOW_POINT_M", "溪流最低點高程(m)"],
+  ["STREAM_ELEVATION_DIFF_M", "高程差(m)"],
+  ["SLOPE_ANGLE_DEG", "計算坡度(角度)"],
+  ["Q50_CLEAR_WATER_CMS", "Q50 清水流(cms)"],
+  ["Q50_DEBRIS_FLOW_CMS", "Q50 土石流(cms)"],
+  ["STRUCTURE_LENGTH_M", "現場既有橫向構造物長(m)"],
+  ["STRUCTURE_DEPTH_M", "現場既有橫向構造物深(m)"],
+  ["FLOW_VELOCITY_MS", "流速(m/s)"],
+  ["EXISTING_CAPACITY_CMS", "既有通洪能力(cms)"],
+  ["CAPACITY_CHECK_RESULT", "通洪斷面檢算結果"],
   ["PHOTO_UP_NAME", "上游照片檔名"],
   ["PHOTO_UP_NOTE", "上游照片補充說明"],
   ["PHOTO_DOWN_NAME", "下游照片檔名"],
@@ -29,6 +49,20 @@ const photoTypes = [
   { key: "PHOTO_UP", nameKey: "PHOTO_UP_NAME", noteKey: "PHOTO_UP_NOTE", label: "上游照片" },
   { key: "PHOTO_DOWN", nameKey: "PHOTO_DOWN_NAME", noteKey: "PHOTO_DOWN_NOTE", label: "下游照片" },
   { key: "PHOTO_SECTION", nameKey: "PHOTO_SECTION_NAME", noteKey: "PHOTO_SECTION_NOTE", label: "通洪斷面" }
+];
+const wNumberFields = [
+  {
+    key: "W_DEPOSIT_HEIGHT_M",
+    label: "通水斷面平均淤積高度約",
+    marker: "通水斷面平均淤積高度",
+    toText: (value) => `通水斷面平均淤積高度約${value}公尺`
+  },
+  {
+    key: "W_DEPOSIT_WIDTH_M",
+    label: "通水斷面平均淤積寬度約",
+    marker: "通水斷面平均淤積寬度",
+    toText: (value) => `通水斷面平均淤積寬度約${value}公尺`
+  }
 ];
 const kGroups = [
   {
@@ -105,6 +139,25 @@ const qWaterSlope = document.querySelector("#qWaterSlope");
 const qDepositSlope = document.querySelector("#qDepositSlope");
 const rWaterSlope = document.querySelector("#rWaterSlope");
 const rDepositSlope = document.querySelector("#rDepositSlope");
+const catchmentArea = document.querySelector("#catchmentArea");
+const runoffCoefficient = document.querySelector("#runoffCoefficient");
+const annualRainfall = document.querySelector("#annualRainfall");
+const concentrationTime = document.querySelector("#concentrationTime");
+const streamLength = document.querySelector("#streamLength");
+const streamHighPoint = document.querySelector("#streamHighPoint");
+const streamLowPoint = document.querySelector("#streamLowPoint");
+const calculatedSlopeAngle = document.querySelector("#calculatedSlopeAngle");
+const streamElevationDiff = document.querySelector("#streamElevationDiff");
+const rainfallIntensity50 = document.querySelector("#rainfallIntensity50");
+const estimatedQ50ClearWater = document.querySelector("#estimatedQ50ClearWater");
+const q50ClearWater = document.querySelector("#q50ClearWater");
+const q50DebrisFlow = document.querySelector("#q50DebrisFlow");
+const structureLength = document.querySelector("#structureLength");
+const structureDepth = document.querySelector("#structureDepth");
+const flowVelocity = document.querySelector("#flowVelocity");
+const existingCapacity = document.querySelector("#existingCapacity");
+const capacityStatus = document.querySelector("#capacityStatus");
+const capacityCompare = document.querySelector("#capacityCompare");
 const ahMultiSelect = document.querySelector("#ahMultiSelect");
 const aiDate = document.querySelector("#aiDate");
 const ajInspector = document.querySelector("#ajInspector");
@@ -233,6 +286,127 @@ function getHeader(col) {
 function getExportHeader(col) {
   const custom = customExportCols.find(([key]) => key === col);
   return custom ? custom[1] : getHeader(col);
+}
+
+function parseNumber(value) {
+  const normalized = String(value ?? "").replace(/,/g, "").trim();
+  if (!normalized || normalized === "-") return null;
+  const number = Number(normalized);
+  return Number.isFinite(number) ? number : null;
+}
+
+function formatNumber(value, digits = 2) {
+  if (!Number.isFinite(value)) return "-";
+  return Number(value.toFixed(digits)).toString();
+}
+
+function estimateConcentrationTimeMinutes(record) {
+  const high = parseNumber(record.STREAM_HIGH_POINT_M);
+  const low = parseNumber(record.STREAM_LOW_POINT_M);
+  const lengthM = parseNumber(record.STREAM_LENGTH_M);
+  if (high === null || low === null || !lengthM || lengthM <= 0 || high <= low) return null;
+
+  const hKm = (high - low) / 1000;
+  const lKm = lengthM / 1000;
+  const velocityKmh = 72 * Math.pow(hKm / lKm, 0.6);
+  if (!Number.isFinite(velocityKmh) || velocityKmh <= 0) return null;
+  return (lKm / velocityKmh) * 60;
+}
+
+function calculateI50(record) {
+  const p = parseNumber(record.ANNUAL_RAINFALL_MM);
+  const t = parseNumber(record.CONCENTRATION_TIME_MIN);
+  if (p === null || t === null || p <= 0 || t <= 0) return null;
+
+  const rainfall25Hour = Math.pow(p / (25.29 + 0.094 * p), 2);
+  const coefficientA = Math.pow(p / (-189.96 + 0.31 * p), 2);
+  const coefficientB = 55;
+  const coefficientC = Math.pow(p / (-381.71 + 1.45 * p), 2);
+  const coefficientG = Math.pow(p / (42.89 + 1.33 * p), 2);
+  const coefficientH = Math.pow(p / (-65.33 + 1.836 * p), 2);
+  const frequencyFactor = coefficientG + coefficientH * Math.log10(50);
+  const durationFactor = coefficientA / Math.pow(t + coefficientB, coefficientC);
+  const intensity = rainfall25Hour * frequencyFactor * durationFactor;
+
+  return Number.isFinite(intensity) && intensity > 0 ? intensity : null;
+}
+
+function calculateQ50ClearWater(record) {
+  const c = parseNumber(record.RUNOFF_COEFFICIENT_C);
+  const i50 = calculateI50(record);
+  const area = parseNumber(record.CATCHMENT_AREA_HA);
+  if (c === null || i50 === null || area === null || c <= 0 || area <= 0) return null;
+  return c * i50 * area / 360;
+}
+
+function calculateCapacityDraft(record) {
+  const high = parseNumber(record.STREAM_HIGH_POINT_M);
+  const low = parseNumber(record.STREAM_LOW_POINT_M);
+  const length = parseNumber(record.STREAM_LENGTH_M);
+  const structureWidth = parseNumber(record.STRUCTURE_LENGTH_M);
+  const structureDepthValue = parseNumber(record.STRUCTURE_DEPTH_M);
+  const velocity = parseNumber(record.FLOW_VELOCITY_MS) ?? 5;
+  const q50Clear = parseNumber(record.Q50_CLEAR_WATER_CMS);
+  const q50ClearEstimated = calculateQ50ClearWater(record);
+  const q50Debris = parseNumber(record.Q50_DEBRIS_FLOW_CMS) ?? (q50Clear !== null ? q50Clear * 1.5 : q50ClearEstimated !== null ? q50ClearEstimated * 1.5 : null);
+  const i50 = calculateI50(record);
+  const elevationDiff = high !== null && low !== null ? high - low : null;
+  const slopeAngle = elevationDiff !== null && length > 0
+    ? Math.atan(elevationDiff / length) * 180 / Math.PI
+    : null;
+  const capacity = structureWidth !== null && structureDepthValue !== null && velocity !== null
+    ? structureWidth * structureDepthValue * velocity
+    : null;
+  const targets = [q50Clear, q50Debris].filter((value) => value !== null);
+  const required = targets.length ? Math.max(...targets) : null;
+  const passes = capacity !== null && required !== null ? capacity >= required : null;
+
+  return {
+    elevationDiff,
+    slopeAngle,
+    capacity,
+    required,
+    passes,
+    q50Clear,
+    q50ClearEstimated,
+    q50Debris,
+    i50
+  };
+}
+
+function renderCapacityCalculation(record) {
+  const calc = calculateCapacityDraft(record);
+  streamElevationDiff.textContent = calc.elevationDiff === null ? "-" : `${formatNumber(calc.elevationDiff)} m`;
+  calculatedSlopeAngle.textContent = calc.slopeAngle === null ? "-" : `${formatNumber(calc.slopeAngle)} deg`;
+  rainfallIntensity50.textContent = calc.i50 === null ? "-" : `${formatNumber(calc.i50)} mm/hr`;
+  estimatedQ50ClearWater.textContent = calc.q50ClearEstimated === null ? "-" : `${formatNumber(calc.q50ClearEstimated)} cms`;
+  existingCapacity.textContent = calc.capacity === null ? "-" : `${formatNumber(calc.capacity)} cms`;
+
+  if (calc.passes === null) {
+    capacityStatus.textContent = "尚未檢算";
+    capacityStatus.classList.remove("is-pass", "is-fail");
+  } else {
+    capacityStatus.textContent = calc.passes ? "符合" : "不符合";
+    capacityStatus.classList.toggle("is-pass", calc.passes);
+    capacityStatus.classList.toggle("is-fail", !calc.passes);
+  }
+
+  const rows = [
+    ["Q50 清水流", calc.q50Clear],
+    ["Q50 土石流", calc.q50Debris]
+  ];
+  capacityCompare.innerHTML = rows.map(([label, demand]) => {
+    const ok = calc.capacity !== null && demand !== null ? calc.capacity >= demand : null;
+    return `
+      <div class="capacity-compare-item ${ok === true ? "is-pass" : ok === false ? "is-fail" : ""}">
+        <span>${label}</span>
+        <strong>${demand === null ? "-" : `${formatNumber(demand)} cms`}</strong>
+        <em>${ok === null ? "待輸入" : ok ? "符合" : "不符合"}</em>
+      </div>
+    `;
+  }).join("");
+
+  return calc;
 }
 
 function isFilledRecord(id) {
@@ -418,7 +592,71 @@ function collectChecked(name) {
   return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map((input) => input.value);
 }
 
+function isWNumberOption(value) {
+  return wNumberFields.some((field) => String(value || "").includes(field.marker));
+}
+
+function splitWParts(value) {
+  return String(value || "")
+    .split(/[;；]/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function extractWNumber(value, marker) {
+  const part = splitWParts(value).find((item) => item.includes(marker)) || "";
+  const tail = part.slice(part.indexOf(marker) + marker.length);
+  const match = tail.match(/約\s*([0-9]+(?:\.[0-9]+)?)/);
+  return match ? match[1] : "";
+}
+
+function extractWSelectValue(value) {
+  return splitWParts(value).find((part) => !isWNumberOption(part)) || "";
+}
+
+function createWInput(row) {
+  const wrap = document.createElement("div");
+  wrap.className = "compound-field";
+
+  const label = document.createElement("label");
+  label.textContent = getHeader("W");
+  const select = document.createElement("select");
+  select.dataset.col = "W_SELECT";
+  select.appendChild(new Option("請選擇", ""));
+  (dataset.dropdowns.W || [])
+    .filter((item) => !isWNumberOption(item))
+    .forEach((item) => select.appendChild(new Option(item, item)));
+  const savedRecord = saved[row.id] || {};
+  const current = savedRecord.W_SELECT || extractWSelectValue(valueOf(row, "W"));
+  if (current && !Array.from(select.options).some((option) => option.value === current)) {
+    select.appendChild(new Option(current, current));
+  }
+  select.value = current;
+  select.addEventListener("change", handleFieldInput);
+  label.appendChild(select);
+  wrap.appendChild(label);
+
+  const numbers = document.createElement("div");
+  numbers.className = "compound-number-fields";
+  wNumberFields.forEach((field) => {
+    const numberLabel = document.createElement("label");
+    numberLabel.className = "number-sentence-field";
+    numberLabel.innerHTML = `
+      <span>${field.label}</span>
+      <input type="number" step="0.01" inputmode="decimal" data-w-number="${field.key}" placeholder="填數字">
+      <span>公尺</span>
+    `;
+    const input = numberLabel.querySelector("input");
+    input.value = savedRecord[field.key] || extractWNumber(valueOf(row, "W"), field.marker);
+    input.addEventListener("input", handleFieldInput);
+    numbers.appendChild(numberLabel);
+  });
+  wrap.appendChild(numbers);
+  return wrap;
+}
+
 function createSelectInput(row, col) {
+  if (col === "W") return createWInput(row);
   const label = document.createElement("label");
   label.textContent = getHeader(col);
   const select = document.createElement("select");
@@ -555,6 +793,23 @@ function renderSelected(row) {
   qDepositSlope.value = valueOf(row, "Q_DEPOSIT");
   rWaterSlope.value = valueOf(row, "R_WATER");
   rDepositSlope.value = valueOf(row, "R_DEPOSIT");
+  catchmentArea.value = valueOf(row, "CATCHMENT_AREA_HA") || valueOf(row, "P");
+  runoffCoefficient.value = valueOf(row, "RUNOFF_COEFFICIENT_C") || "0.8";
+  annualRainfall.value = valueOf(row, "ANNUAL_RAINFALL_MM");
+  streamLength.value = valueOf(row, "STREAM_LENGTH_M") || valueOf(row, "N");
+  streamHighPoint.value = valueOf(row, "STREAM_HIGH_POINT_M") || valueOf(row, "L");
+  streamLowPoint.value = valueOf(row, "STREAM_LOW_POINT_M") || valueOf(row, "M");
+  concentrationTime.value = valueOf(row, "CONCENTRATION_TIME_MIN") || formatNumber(estimateConcentrationTimeMinutes({
+    STREAM_HIGH_POINT_M: streamHighPoint.value,
+    STREAM_LOW_POINT_M: streamLowPoint.value,
+    STREAM_LENGTH_M: streamLength.value
+  }), 1).replace("-", "");
+  q50ClearWater.value = valueOf(row, "Q50_CLEAR_WATER_CMS");
+  q50DebrisFlow.value = valueOf(row, "Q50_DEBRIS_FLOW_CMS");
+  structureLength.value = valueOf(row, "STRUCTURE_LENGTH_M") || valueOf(row, "T");
+  structureDepth.value = valueOf(row, "STRUCTURE_DEPTH_M") || valueOf(row, "U");
+  flowVelocity.value = valueOf(row, "FLOW_VELOCITY_MS") || "5";
+  renderCapacityCalculation(collectCurrentRecord() || {});
 
   renderAhMulti(row);
   aiDate.value = valueOf(row, "AI");
@@ -575,7 +830,7 @@ function selectRecord(id) {
 }
 
 function ensureTimestamp(record) {
-  const hasContent = ["K", "Q_WATER", "Q_DEPOSIT", "R_WATER", "R_DEPOSIT", "S", "T", "U", "V", "W", "X", "Y", "Z", "AG", "AH", "AJ", "AL", "AM", "PHOTO_UP_NAME", "PHOTO_UP_NOTE", "PHOTO_DOWN_NAME", "PHOTO_DOWN_NOTE", "PHOTO_SECTION_NAME", "PHOTO_SECTION_NOTE"]
+  const hasContent = ["K", "Q_WATER", "Q_DEPOSIT", "R_WATER", "R_DEPOSIT", "CATCHMENT_AREA_HA", "RUNOFF_COEFFICIENT_C", "ANNUAL_RAINFALL_MM", "CONCENTRATION_TIME_MIN", "STREAM_LENGTH_M", "STREAM_HIGH_POINT_M", "STREAM_LOW_POINT_M", "Q50_CLEAR_WATER_CMS", "Q50_DEBRIS_FLOW_CMS", "STRUCTURE_LENGTH_M", "STRUCTURE_DEPTH_M", "FLOW_VELOCITY_MS", "S", "T", "U", "V", "W", "X", "Y", "Z", "AG", "AH", "AJ", "AL", "AM", "PHOTO_UP_NAME", "PHOTO_UP_NOTE", "PHOTO_DOWN_NAME", "PHOTO_DOWN_NOTE", "PHOTO_SECTION_NAME", "PHOTO_SECTION_NOTE"]
     .some((col) => String(record[col] || "").trim());
   if (hasContent) {
     if (!record.AI) record.AI = today();
@@ -616,10 +871,45 @@ function collectCurrentRecord() {
   record.AH = ahSelected
     .concat(record.AH_OTHER ? [record.AH_OTHER] : [])
     .join("；");
+  wNumberFields.forEach((field) => {
+    const input = document.querySelector(`[data-w-number="${field.key}"]`);
+    record[field.key] = input?.value.trim() || "";
+  });
+  const wParts = [];
+  if (record.W_SELECT) wParts.push(record.W_SELECT);
+  wNumberFields.forEach((field) => {
+    if (record[field.key]) wParts.push(field.toText(record[field.key]));
+  });
+  record.W = wParts.join("；");
   record.Q_WATER = qWaterSlope.value;
   record.Q_DEPOSIT = qDepositSlope.value;
   record.R_WATER = rWaterSlope.value;
   record.R_DEPOSIT = rDepositSlope.value;
+  record.CATCHMENT_AREA_HA = catchmentArea.value;
+  record.RUNOFF_COEFFICIENT_C = runoffCoefficient.value;
+  record.ANNUAL_RAINFALL_MM = annualRainfall.value;
+  record.CONCENTRATION_TIME_MIN = concentrationTime.value;
+  record.STREAM_LENGTH_M = streamLength.value;
+  record.STREAM_HIGH_POINT_M = streamHighPoint.value;
+  record.STREAM_LOW_POINT_M = streamLowPoint.value;
+  record.Q50_CLEAR_WATER_CMS = q50ClearWater.value;
+  record.Q50_DEBRIS_FLOW_CMS = q50DebrisFlow.value;
+  record.STRUCTURE_LENGTH_M = structureLength.value;
+  record.STRUCTURE_DEPTH_M = structureDepth.value;
+  record.FLOW_VELOCITY_MS = flowVelocity.value || "5";
+  const capacityCalc = calculateCapacityDraft(record);
+  record.RAINFALL_INTENSITY_50_MM_HR = capacityCalc.i50 === null ? "" : formatNumber(capacityCalc.i50);
+  record.ESTIMATED_Q50_CLEAR_WATER_CMS = capacityCalc.q50ClearEstimated === null ? "" : formatNumber(capacityCalc.q50ClearEstimated);
+  if (!record.Q50_CLEAR_WATER_CMS && capacityCalc.q50ClearEstimated !== null) {
+    record.Q50_CLEAR_WATER_CMS = formatNumber(capacityCalc.q50ClearEstimated);
+  }
+  if (!record.Q50_DEBRIS_FLOW_CMS && parseNumber(record.Q50_CLEAR_WATER_CMS) !== null) {
+    record.Q50_DEBRIS_FLOW_CMS = formatNumber(parseNumber(record.Q50_CLEAR_WATER_CMS) * 1.5);
+  }
+  record.STREAM_ELEVATION_DIFF_M = capacityCalc.elevationDiff === null ? "" : formatNumber(capacityCalc.elevationDiff);
+  record.SLOPE_ANGLE_DEG = capacityCalc.slopeAngle === null ? "" : formatNumber(capacityCalc.slopeAngle);
+  record.EXISTING_CAPACITY_CMS = capacityCalc.capacity === null ? "" : formatNumber(capacityCalc.capacity);
+  record.CAPACITY_CHECK_RESULT = capacityCalc.passes === null ? "" : capacityCalc.passes ? "符合" : "不符合";
   record.AI = aiDate.value;
   record.AJ = ajInspector.value.trim();
   record.AK = akDate.value;
@@ -644,6 +934,9 @@ function handleFieldInput() {
   if (!draft) return;
   aiDate.value = draft.AI || "";
   akDate.value = draft.AK || "";
+  q50ClearWater.value = draft.Q50_CLEAR_WATER_CMS || "";
+  q50DebrisFlow.value = draft.Q50_DEBRIS_FLOW_CMS || "";
+  renderCapacityCalculation(draft);
   document.querySelectorAll("[data-k-other]").forEach((input) => {
     const group = input.closest(".multi-group");
     const hasOther = Boolean(group?.querySelector('input[value="其他"]:checked'));
@@ -765,7 +1058,7 @@ function buildSyncPayload(rows) {
   });
   return {
     app: "wild-creek-field-survey",
-    version: "pwa-v11",
+    version: "pwa-v19",
     submittedAt: new Date().toISOString(),
     headers,
     rows: buildSyncRows(rows)
@@ -855,6 +1148,7 @@ backToList.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "
 backToListBottom.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
 [aiDate, ajInspector, akDate, alPhotoLink, amNote].forEach((input) => input.addEventListener("input", handleFieldInput));
 [qWaterSlope, qDepositSlope, rWaterSlope, rDepositSlope].forEach((input) => input.addEventListener("input", handleFieldInput));
+[catchmentArea, runoffCoefficient, annualRainfall, concentrationTime, streamLength, streamHighPoint, streamLowPoint, q50ClearWater, q50DebrisFlow, structureLength, structureDepth, flowVelocity].forEach((input) => input.addEventListener("input", handleFieldInput));
 window.addEventListener("online", updateNetworkStatus);
 window.addEventListener("offline", updateNetworkStatus);
 window.addEventListener("popstate", () => closeImageViewerPanel(true));

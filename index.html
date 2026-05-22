@@ -121,6 +121,85 @@
       </section>
 
       <section class="form-section">
+        <div class="section-heading">
+          <h2>通洪斷面檢算</h2>
+          <span id="capacityStatus" class="result-status">尚未檢算</span>
+        </div>
+        <p class="helper-text">坡度角度由最高點、最低點與溪流長度換算；既有通洪能力以長 x 深 x 5 m/s 計算，並與 Q50 清水流及土石流量比對。</p>
+        <div class="field-grid">
+          <label>
+            集水區面積(ha)
+            <input id="catchmentArea" type="number" step="0.01" inputmode="decimal" placeholder="由 P 欄帶入，可修正">
+          </label>
+          <label>
+            逕流係數 C
+            <input id="runoffCoefficient" type="number" step="0.01" inputmode="decimal" placeholder="建議初值 0.80，可依地貌修正">
+          </label>
+          <label>
+            年平均雨量 P(mm)
+            <input id="annualRainfall" type="number" step="0.1" inputmode="decimal" placeholder="依雨量站或等雨量線填入">
+          </label>
+          <label>
+            集流時間 tc(分)
+            <input id="concentrationTime" type="number" step="0.1" inputmode="decimal" placeholder="可由溪長與高程差估算後修正">
+          </label>
+          <label>
+            土石流潛勢溪流長度(m)
+            <input id="streamLength" type="number" step="0.01" inputmode="decimal" placeholder="由 N 欄帶入，可修正">
+          </label>
+          <label>
+            溪流最高點高程(m)
+            <input id="streamHighPoint" type="number" step="0.01" inputmode="decimal" placeholder="由 L 欄帶入，可修正">
+          </label>
+          <label>
+            溪流最低點高程(m)
+            <input id="streamLowPoint" type="number" step="0.01" inputmode="decimal" placeholder="由 M 欄帶入，可修正">
+          </label>
+          <div class="view-item">
+            <span>計算坡度(角度)</span>
+            <strong id="calculatedSlopeAngle">-</strong>
+          </div>
+          <div class="view-item">
+            <span>高程差(m)</span>
+            <strong id="streamElevationDiff">-</strong>
+          </div>
+          <div class="view-item">
+            <span>I50 降雨強度(mm/hr)</span>
+            <strong id="rainfallIntensity50">-</strong>
+          </div>
+          <div class="view-item">
+            <span>估算清水流(cms)</span>
+            <strong id="estimatedQ50ClearWater">-</strong>
+          </div>
+          <label>
+            Q50 清水流(cms)
+            <input id="q50ClearWater" type="number" step="0.01" inputmode="decimal" placeholder="可由 C、I50、A 自動估算後修正">
+          </label>
+          <label>
+            Q50 土石流(cms)
+            <input id="q50DebrisFlow" type="number" step="0.01" inputmode="decimal" placeholder="輸入檢算後 Q50 土石流">
+          </label>
+          <label>
+            現場既有橫向構造物長(m)
+            <input id="structureLength" type="number" step="0.01" inputmode="decimal" placeholder="由 T 欄橋寬帶入，可修正">
+          </label>
+          <label>
+            現場既有橫向構造物深(m)
+            <input id="structureDepth" type="number" step="0.01" inputmode="decimal" placeholder="由 U 欄橋深帶入，可修正">
+          </label>
+          <label>
+            流速(m/s)
+            <input id="flowVelocity" type="number" step="0.01" inputmode="decimal" value="5">
+          </label>
+          <div class="view-item">
+            <span>既有通洪能力(cms)</span>
+            <strong id="existingCapacity">-</strong>
+          </div>
+        </div>
+        <div id="capacityCompare" class="capacity-compare"></div>
+      </section>
+
+      <section class="form-section">
         <h2>下拉選單欄位</h2>
         <div id="dropdownFields" class="field-grid"></div>
       </section>
@@ -197,7 +276,7 @@
   </div>
 
   <script src="data.js"></script>
-  <script src="previous-results.js?v=16"></script>
-  <script src="app.js"></script>
+  <script src="previous-results.js?v=18"></script>
+  <script src="app.js?v=19"></script>
 </body>
 </html>

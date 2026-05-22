@@ -308,6 +308,64 @@ textarea:focus {
   font-weight: 900;
 }
 
+.result-status.is-pass {
+  background: #dff1e8;
+  color: #0e5144;
+}
+
+.result-status.is-fail {
+  background: #ffe0d1;
+  color: #8d2f00;
+}
+
+.capacity-compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.capacity-compare-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: #fbfdfc;
+}
+
+.capacity-compare-item span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.capacity-compare-item strong {
+  font-weight: 900;
+}
+
+.capacity-compare-item em {
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-style: normal;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.capacity-compare-item.is-pass em {
+  background: #dff1e8;
+  color: #0e5144;
+}
+
+.capacity-compare-item.is-fail em {
+  background: #ffe0d1;
+  color: #8d2f00;
+}
+
 .previous-summary {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -400,6 +458,37 @@ textarea:focus {
   margin-top: 4px;
   border-radius: 8px;
   text-decoration: none;
+}
+
+.compound-field {
+  display: grid;
+  gap: 10px;
+}
+
+.compound-field label {
+  margin-bottom: 0;
+}
+
+.compound-number-fields {
+  display: grid;
+  gap: 8px;
+}
+
+.number-sentence-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(110px, 0.45fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: #fbfdfc;
+}
+
+.number-sentence-field input {
+  min-height: 44px;
+  padding: 10px;
 }
 
 .image-viewer {
@@ -596,6 +685,8 @@ button {
     .view-grid,
     .previous-summary,
     .previous-result-card,
+    .capacity-compare,
+    .number-sentence-field,
     .multi-options,
     .photo-actions,
     .button-row {
